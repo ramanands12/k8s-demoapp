@@ -1,56 +1,47 @@
-import { useState } from "react";
-import "./App.css";
+import { useEffect, useState } from 'react';
+import ItemList from './components/ItemList';
 
 function App() {
-  const [data, setData] = useState(null);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const callBackend = async () => {
-    setLoading(true);
-    setError("");
-    setData(null);
+  useEffect(() => {
+    fetch('http://localhost:8000/items')
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch items');
+        return res.json();
+      })
+      .then(data => setItems(data))
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
 
-    try {
-      const response = await fetch("http://localhost:8000/health");
-      if (!response.ok) {
-        throw new Error("Backend not reachable");
-      }
-      const result = await response.json();
-      setData(result);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (loading) return <p className="text-center">Loading items...</p>;
+  if (error) return <p className="text-center text-red-500">{error}</p>;
 
-  return (
-    <div className="app">
-      <div className="card">
-        <h1>🚀 K8s Demo App</h1>
-        <p className="subtitle">
-          React frontend talking to FastAPI backend
-        </p>
+ return (
+  <div style={{ padding: "20px" }}>
+    <h2>Items</h2>
 
-        <button onClick={callBackend} disabled={loading}>
-          {loading ? "Checking..." : "Check Backend Health"}
-        </button>
-
-        {data && (
-          <div className="success">
-            ✅ Backend Status: <strong>{data.status}</strong>
-          </div>
-        )}
-
-        {error && (
-          <div className="error">
-            ❌ {error}
-          </div>
-        )}
-      </div>
-    </div>
-  );
+    {items && items.length > 0 ? (
+      items.map(item => (
+        <div
+          key={item.id}
+          style={{
+            padding: "10px",
+            marginBottom: "8px",
+            border: "1px solid #ccc",
+            borderRadius: "6px"
+          }}
+        >
+          {item.name}
+        </div>
+      ))
+    ) : (
+      <p>No items available or failed to load.</p>
+    )}
+  </div>
+);
 }
-
 export default App;
